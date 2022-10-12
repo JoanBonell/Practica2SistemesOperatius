@@ -17,6 +17,7 @@ La vostra tasca és implementar en C aquesta funcionalitat.
 
 ### Resposta
 
+
 #include <stdio.h> //rename()
 #include <stdlib.h> //exit()
 #include <unistd.h> // getuid()
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]){
     }
     exit(1);
 }
+
 
 
 ## Part pràctica: Instal·lar la comanda al sistema rmsf
