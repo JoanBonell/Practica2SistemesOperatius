@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
     if(argc < 2){
         fprintf(stderr, "Usabilitat: ./rmsf fitxer1 fitxer2 fitxer3 ... fitxerN");
         exit(1);
-    
+    }
     
     //  Comprovem que existeixi el directori trash:
     struct stat st = {0};
