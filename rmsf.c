@@ -71,7 +71,6 @@ int main(int argc, char *argv[]){
                         perror("Error: No s'ha pogut moure el fitxer correctament.");
                         exit(1);
                     }
-                    exit(1);
                 }
             }
             
