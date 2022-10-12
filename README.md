@@ -17,50 +17,83 @@ La vostra tasca és implementar en C aquesta funcionalitat.
 
 ### Resposta
 
-#include <stdio.h> //Funció rename()
-#include <stdlib.h>
-#include <unistd.h> //Funció getuid()
-#include ‹dirent.h> //Funció oendir()
-#include <sys/types.h>
+#include <stdio.h> //rename()
+#include <stdlib.h> //exit()
+#include <unistd.h> // getuid()
+#include <sys/types.h> //getuid()
+#include <dirent.h> //opendir()
 #include <pwd.h> //getpwuid()
-#include cerrno.h> //perror()
-#include <string.h> //strcopy() strncpy() streat()
-#include <sys/stat.h> //mkdir()
-#include <stdbool.h>
-//#include ciostream.h>
+#include <errno.h> // perror()
+#include <string.h> //strcopy() strcat()
+#include <sys/stat.h> //stat() mkdir()
 
-bool existe_papelera();
 
-DIR *dirp;
-int main(int c, char *argvt[]){
-    char pathname [50];
-    //strcat(pathname, geteuid());
-    if(!existe_papelera){
-        //Creamos la papelera 
-        printf ("NO existe papelera.");
-        int status;
-        status - mkdir("/home/bin/trash", S_IRWXU);
-        strcat (pathname, argv[0]),
-        rename (pathname,"/home/bin/trash");
+int main(int argc, char *argv[]){
+    //Rmsf utility
+    //Check for arguments
+    //  Comprovem que els arguments que ens passen siguin correctes:
+    if(argc < 2){
+       fprintf(stderr, "Usabilitat: ./rmsf fitxer1 fitxer2 fitxer3 ... fitxerN");
+       exit(1);
     }
-    else {
-        printf ("La papelera existe");
-        strcat (pathname, argv[0]);
-        rename (pathname, "/bin/trash");
-        //Movemos el argv[0] a la papelera.
-        //System.IO.Directory.Move(argv[0], dirp);
+    //Check if the trash folder exists
+    //  Comprovem que existeixi el directori trash:
+    struct stat st = {0};
+    if(stat("./trash", &st) == -1){
+        mkdir("./trash", S_IWOTH); // Creem el trash amb permisos S_IWOTH, el propietari i tots els altres grups tenen permisos per llegir, escriure i executar.
+        
     }
-    printf("Is working...");
-    return 0;
+
+    //  Comprovem que l'usuari no sigui root per evitar que borri fitxers que no li pertanyen:
+    if(getuid() == 0){ //id de root = 0
+        fprintf(stderr, "Error: rmsf no es pot carregar com a root \n");
+        exit(1);
+    }
+
+    // Mirem que els arguments que ens passen siguin correctes:
+    int i;
+    for(i = 1; i < argc; i++){
+        //  Comprovem que el fitxer existeixi:
+        if(access(argv[i], F_OK) == -1){
+            fprintf(stderr, "Error: %s no existeix", argv[i]);
+            exit(1);
+        }
+
+        //  Comprovem que el fitxer no sigui un directori:
+        if(opendir(argv[i]) != NULL){
+            fprintf(stderr, "Error: %s es una carpeta", argv[i]);
+            exit(1);
+        }
+
+        //  Comprovem que el fitxer sigui escribible:
+        if(access(argv[i], W_OK) == -1){
+            //  Comprovem que el dispositiu d'entrada estàndard sigui un terminal:
+            if(isatty(fileno(stdin))){
+                //  Demanem confirmació a l'usuari:
+                char *input = malloc(10);
+                fprintf(stderr, "Estàs segur que vols remoure el fitxer %s? (y/n): ", argv[i]);
+                fgets(input, 10, stdin);
+                if(strcmp(input, "y")==0){
+                    //  Mirem el directori on es troba el fitxer:
+                    char *home = getpwuid(getuid())->pw_dir;
+                    //  Creem el path del fitxer:
+                    char *trash = strcat(home, "/trash");
+                    char *new = strcat(trash, argv[i]);
+                    rename(argv[i], new);
+                    printf("Fitxer %s mogut a la carpeta trash", argv[i]);
+                    //  Comprovem que el rename s'hagi fet correctament:
+                    if(rename(argv[i], new) == -1){
+                        perror("Error: No s'ha pogut moure el fitxer correctament.");
+                        exit(1);
+                    }
+                    exit(1);
+                }
+            }
+            
+        }      
+    }
+    exit(1);
 }
-
-bool existe_papelera(){
-    //DIR *dirp;
-    dirp = opendir ("bin/trash");
-    if(dirp == NULL){
-        return false;
-    }
-    return true;
 
 
 ## Part pràctica: Instal·lar la comanda al sistema rmsf
