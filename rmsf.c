@@ -1,3 +1,6 @@
+/*  Autors:
+    - Ricard Bosch Perianes.
+    - Joan Bonell Ruiz.*/
 #include <stdio.h> //rename()
 #include <stdlib.h> //exit()
 #include <unistd.h> // getuid()
@@ -8,12 +11,6 @@
 #include <string.h> //strcopy() strcat()
 #include <sys/stat.h> //stat() mkdir()
 
-/*  The rmsf utility attempts to move files and foldes on the command line to the ./trash folder
-    located at the user's home. This is not an actual remove. Note that the program will create
-    the trash folder if it does not exist. If the file's permissions do not permit writing, and the
-    standard input device is a terminal, the user is prompted (on the standerd error output)
-    for confirmation.*/
-
 int main(int argc, char *argv[]){
     //Rmsf utility
     //Check for arguments
@@ -22,7 +19,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr, "Usabilitat: ./rmsf fitxer1 fitxer2 fitxer3 ... fitxerN");
         exit(1);
     
-    //Check if the trash folder exists
+    
     //  Comprovem que existeixi el directori trash:
     struct stat st = {0};
     if(stat("./trash", &st) == -1){
