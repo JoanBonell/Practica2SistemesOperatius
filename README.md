@@ -106,11 +106,11 @@ Explique els pasos realitzats.
 
 ### Resposta
 
-Per a poder tenir una comanda, pròpia, haurem de posar el fitxer executable dins de la carpeta /bin/bash.
-Amb la comanda MV ho podrem fer.
-Pas 2: Donem permisos d’execució a l’executable.
-chmod +x rmsf
-Ara ja podem escriure ./rmsf desde qualsevol àrea del sistema amb els seus arguments.
+1 - Compila el codi font de rmsf utilitzant el compilador de C, com a GCC. Per ex. pots utilitzar la comanda 'gcc -o rmsf rmsf.c' per compilar i 'rmsf.' per generar el exectuable.
+2 - Crear un enllaç a l'arxiu exectuable en un directori inclós en la variable 'PATH' del sistema. Per ex. 'ln -s /ruta/al/al/archivo/ejectuable/rmsf/usr/local/bin/rmsf' per a crear l'enllaç simbolic en el directori '/usr/local/bin'.
+3 - Assegurar-se de que l'arxiu exectuable tingui permisos d'execució. 'chmod +x /ruta/al/archivo/ejectuable/rmsf' per otorgar permisos d'execució a l'arxiu.
+
+Els usuaris haurien de poder utilitzar la comanda rmsf directament des de la línia de comandes, proporcionant el nom de l'arxiu o carpeta que desitgin eliminar com a argument. Per exemple, podrien utilitzar la comanda rmsf arxiu.txt per a moure l'arxiu arxivo.txt a la carpeta .trash.
 
 ## Part pràctica: Test
 
