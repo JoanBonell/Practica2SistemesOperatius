@@ -18,84 +18,62 @@ La vostra tasca és implementar en C aquesta funcionalitat.
 ### Resposta
 
 
-#include <stdio.h> //rename()
-#include <stdlib.h> //exit()
-#include <unistd.h> // getuid()
-#include <sys/types.h> //getuid()
-#include <dirent.h> //opendir()
-#include <pwd.h> //getpwuid()
-#include <errno.h> // perror()
-#include <string.h> //strcopy() strcat()
-#include <sys/stat.h> //stat() mkdir()
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
 
+int main(int argc, char* argv[]) {
+  // Verificar que se haya proporcionado al menos un archivo/carpeta a eliminar
+  if (argc < 2) {
+    fprintf(stderr, "Error: se debe proporcionar al menos un archivo/carpeta a eliminar.\n");
+    return 1;
+  }
 
-int main(int argc, char *argv[]){
-    //Rmsf utility
-    //Check for arguments
-    //  Comprovem que els arguments que ens passen siguin correctes:
-    if(argc < 2){
-       fprintf(stderr, "Usabilitat: ./rmsf fitxer1 fitxer2 fitxer3 ... fitxerN");
-       exit(1);
+  // Construir la ruta de la carpeta .trash
+  char* home = getenv("HOME"); // Obtener el directorio home del usuario
+  char trash_path[strlen(home) + 8]; // Reservar suficiente espacio para la ruta de la carpeta .trash
+  sprintf(trash_path, "%s/.trash", home); // Construir la ruta
+
+  // Crear la carpeta .trash si no existe
+  struct stat st = {0};
+  if (stat(trash_path, &st) == -1) {
+    mkdir(trash_path, 0700);
+  }
+
+  // Recorrer cada archivo/carpeta proporcionado como argumento
+  for (int i = 1; i < argc; i++) {
+    char* src_path = argv[i]; // Obtener la ruta del archivo/carpeta a eliminar
+    char dest_path[strlen(trash_path) + strlen(src_path) + 2]; // Reservar suficiente espacio para la ruta de destino
+
+    // Construir la ruta de destino como "$HOME/.trash/$SRC_PATH"
+    sprintf(dest_path, "%s/%s", trash_path, src_path);
+
+    // Verificar si se tiene permiso de escritura en el archivo/carpeta
+    if (access(src_path, W_OK) == 0) {
+      // Si se tiene permiso, mover el archivo/carpeta a la carpeta .trash
+      if (rename(src_path, dest_path) != 0) {
+        // Si falla el movimiento, mostrar un mensaje de error
+        fprintf(stderr, "Error al mover '%s' a la carpeta .trash.\n", src_path);
+      }
+    } else {
+      // Si no se tiene permiso de escritura, pedir confirmación al usuario
+      printf("¿Desea eliminar '%s'? [s/n] ", src_path);
+      char response[3];
+      scanf("%2s", response);
+
+      if (response[0] == 's') {
+        // Si el usuario confirma, mover el archivo/carpeta a la carpeta .trash
+        if (rename(src_path, destpath) != 0) {
+          // Si falla el movimiento, mostrar un mensaje de error.
+          fprintf(stderr, "Error al mover '%s' a la carpeta .trash.\n!, src_path);
+          }
+      }
     }
-    //Check if the trash folder exists
-    //  Comprovem que existeixi el directori trash:
-    struct stat st = {0};
-    if(stat("./trash", &st) == -1){
-        mkdir("./trash", S_IWOTH); // Creem el trash amb permisos S_IWOTH, el propietari i tots els altres grups tenen permisos per llegir, escriure i executar.
-        
     }
-
-    //  Comprovem que l'usuari no sigui root per evitar que borri fitxers que no li pertanyen:
-    if(getuid() == 0){ //id de root = 0
-        fprintf(stderr, "Error: rmsf no es pot carregar com a root \n");
-        exit(1);
+    return 0;
     }
-
-    // Mirem que els arguments que ens passen siguin correctes:
-    int i;
-    for(i = 1; i < argc; i++){
-        //  Comprovem que el fitxer existeixi:
-        if(access(argv[i], F_OK) == -1){
-            fprintf(stderr, "Error: %s no existeix", argv[i]);
-            exit(1);
-        }
-
-        //  Comprovem que el fitxer no sigui un directori:
-        if(opendir(argv[i]) != NULL){
-            fprintf(stderr, "Error: %s es una carpeta", argv[i]);
-            exit(1);
-        }
-
-        //  Comprovem que el fitxer sigui escribible:
-        if(access(argv[i], W_OK) == -1){
-            //  Comprovem que el dispositiu d'entrada estàndard sigui un terminal:
-            if(isatty(fileno(stdin))){
-                //  Demanem confirmació a l'usuari:
-                char *input = malloc(10);
-                fprintf(stderr, "Estàs segur que vols remoure el fitxer %s? (y/n): ", argv[i]);
-                fgets(input, 10, stdin);
-                if(strcmp(input, "y")==0){
-                    //  Mirem el directori on es troba el fitxer:
-                    char *home = getpwuid(getuid())->pw_dir;
-                    //  Creem el path del fitxer:
-                    char *trash = strcat(home, "/trash");
-                    char *new = strcat(trash, argv[i]);
-                    rename(argv[i], new);
-                    printf("Fitxer %s mogut a la carpeta trash", argv[i]);
-                    //  Comprovem que el rename s'hagi fet correctament:
-                    if(rename(argv[i], new) == -1){
-                        perror("Error: No s'ha pogut moure el fitxer correctament.");
-                        exit(1);
-                    }
-                    exit(1);
-                }
-            }
-            
-        }      
-    }
-    exit(1);
-}
-
 
 
 ## Part pràctica: Instal·lar la comanda al sistema rmsf
@@ -107,7 +85,9 @@ Explique els pasos realitzats.
 ### Resposta
 
 1 - Compila el codi font de rmsf utilitzant el compilador de C, com a GCC. Per ex. pots utilitzar la comanda 'gcc -o rmsf rmsf.c' per compilar i 'rmsf.' per generar el exectuable.
+
 2 - Crear un enllaç a l'arxiu exectuable en un directori inclós en la variable 'PATH' del sistema. Per ex. 'ln -s /ruta/al/al/archivo/ejectuable/rmsf/usr/local/bin/rmsf' per a crear l'enllaç simbolic en el directori '/usr/local/bin'.
+
 3 - Assegurar-se de que l'arxiu exectuable tingui permisos d'execució. 'chmod +x /ruta/al/archivo/ejectuable/rmsf' per otorgar permisos d'execució a l'arxiu.
 
 Els usuaris haurien de poder utilitzar la comanda rmsf directament des de la línia de comandes, proporcionant el nom de l'arxiu o carpeta que desitgin eliminar com a argument. Per exemple, podrien utilitzar la comanda rmsf arxiu.txt per a moure l'arxiu arxivo.txt a la carpeta .trash.
@@ -122,14 +102,23 @@ La vostra tasca és prepar un fitxer test.sh que contingui totes les comandes qu
 
 El nostre fitxer test.sh queda així:
 
-mkdir dir
-cd dir
-mkdir subdir 
-cd ..
-./rmsf file1
-./rmsf file1 dir
-./rmsf file1 dir/file2
-./rmsf file1 dir/subdir/file2
+#!/bin/bash
+
+# Crear algunos archivos y carpetas de prueba
+touch archivo1.txt archivo2.txt
+mkdir carpeta1 carpeta2
+
+# Ejecutar el comando rmsf con diferentes argumentos
+rmsf archivo1.txt
+rmsf archivo2.txt
+rmsf carpeta1
+rmsf carpeta2
+
+# Verificar que los archivos y carpetas hayan sido movidos a la carpeta .trash
+ls ~/.trash
+
+# Limpiar la carpeta .trash
+rm -r ~/.trash
 
 ## Part pràctica: Automatització amb Make
 
@@ -139,11 +128,24 @@ La vostra tasca és revisar el funcionament dels Makefiles. Heu de preparar un M
 
 ### Resposta
 
-make: rmsf.c
-  gcc -c rmsf.c
+CC = gcc
+CFLAGS = -Wall -Wextra
+TARGET = rmsf
 
-executable: rmsf.o
-  gcc -o rmsf rmsf.o
+all: $(TARGET)
 
-test:
-  ./rmsf < test.sh
+$(TARGET): $(TARGET).c
+	$(CC) $(CFLAGS) -o $@ $^
+
+run: $(TARGET)
+	./$(TARGET)
+
+test: $(TARGET)
+	bash test.sh
+
+install: $(TARGET)
+	ln -s $(PWD)/$(TARGET) /usr/local/bin/$(TARGET)
+
+uninstall:
+	rm /usr/local/bin/$(TARGET)
+
