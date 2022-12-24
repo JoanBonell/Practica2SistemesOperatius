@@ -1,12 +1,20 @@
-#Makefile de rmsf.c
-compilar:
-	gcc -o rmsf rmsf.c
-executar: rmsf.o
-	./rmsf
-esborrar:
-	rm -rf rmsf rmsf.o
-testmultiples:
-	./rmsf < testmultiples.txt
-testuno:
-	./rmsf < testuno.txt
-# Fi de fitxer.
+CC = gcc
+CFLAGS = -Wall -Wextra
+TARGET = rmsf
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET).c
+	$(CC) $(CFLAGS) -o $@ $^
+
+run: $(TARGET)
+	./$(TARGET)
+
+test: $(TARGET)
+	bash test.sh
+
+install: $(TARGET)
+	ln -s $(PWD)/$(TARGET) /usr/local/bin/$(TARGET)
+
+uninstall:
+	rm /usr/local/bin/$(TARGET)
