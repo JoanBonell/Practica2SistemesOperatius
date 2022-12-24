@@ -1,77 +1,61 @@
 /*  Autors:
     - Ricard Bosch Perianes.
     - Joan Bonell Ruiz.*/
-#include <stdio.h> //rename()
-#include <stdlib.h> //exit()
-#include <unistd.h> // getuid()
-#include <sys/types.h> //getuid()
-#include <dirent.h> //opendir()
-#include <pwd.h> //getpwuid()
-#include <errno.h> // perror()
-#include <string.h> //strcopy() strcat()
-#include <sys/stat.h> //stat() mkdir()
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
 
-int main(int argc, char *argv[]){
-    //Rmsf utility
-    //Check for arguments
-    //  Comprovem que els arguments que ens passen siguin correctes:
-    if(argc < 2){
-        fprintf(stderr, "Usabilitat: ./rmsf fitxer1 fitxer2 fitxer3 ... fitxerN");
-        exit(1);
-    }
-    
-    //  Comprovem que existeixi el directori trash:
-    struct stat st = {0};
-    if(stat("./trash", &st) == -1){
-        mkdir("./trash", S_IWOTH); // Creem el trash amb permisos S_IWOTH, el propietari i tots els altres grups tenen permisos per llegir, escriure i executar.
-        
-    }
+int main(int argc, char* argv[]) {
+  // Verificar que se haya proporcionado al menos un archivo/carpeta a eliminar
+  if (argc < 2) {
+    fprintf(stderr, "Error: se debe proporcionar al menos un archivo/carpeta a eliminar.\n");
+    return 1;
+  }
 
-    //  Comprovem que l'usuari no sigui root per evitar que borri fitxers que no li pertanyen:
-    if(getuid() == 0){ //id de root = 0
-        fprintf(stderr, "Error: rmsf no es pot carregar com a root \n");
-        exit(1);
-    }
+  // Construir la ruta de la carpeta .trash
+  char* home = getenv("HOME"); // Obtener el directorio home del usuario
+  char trash_path[strlen(home) + 8]; // Reservar suficiente espacio para la ruta de la carpeta .trash
+  sprintf(trash_path, "%s/.trash", home); // Construir la ruta
 
-    // Mirem que els arguments que ens passen siguin correctes:
-    int i;
-    for(i = 1; i < argc; i++){
-        //  Comprovem que el fitxer existeixi:
-        if(access(argv[i], F_OK) == -1){
-            fprintf(stderr, "Error: %s no existeix", argv[i]);
-            exit(1);
+  // Crear la carpeta .trash si no existe
+  struct stat st = {0};
+  if (stat(trash_path, &st) == -1) {
+    mkdir(trash_path, 0700);
+  }
+
+  // Recorrer cada archivo/carpeta proporcionado como argumento
+  for (int i = 1; i < argc; i++) {
+    char* src_path = argv[i]; // Obtener la ruta del archivo/carpeta a eliminar
+    char dest_path[strlen(trash_path) + strlen(src_path) + 2]; // Reservar suficiente espacio para la ruta de destino
+
+    // Construir la ruta de destino como "$HOME/.trash/$SRC_PATH"
+    sprintf(dest_path, "%s/%s", trash_path, src_path);
+
+    // Verificar si se tiene permiso de escritura en el archivo/carpeta
+    if (access(src_path, W_OK) == 0) {
+      // Si se tiene permiso, mover el archivo/carpeta a la carpeta .trash
+      if (rename(src_path, dest_path) != 0) {
+        // Si falla el movimiento, mostrar un mensaje de error
+        fprintf(stderr, "Error al mover '%s' a la carpeta .trash.\n", src_path);
+      }
+    } else {
+      // Si no se tiene permiso de escritura, pedir confirmación al usuario
+      printf("¿Desea eliminar '%s'? [s/n] ", src_path);
+      char response[3];
+      scanf("%2s", response);
+
+      if (response[0] == 's') {
+        // Si el usuario confirma, mover el archivo/carpeta a la carpeta .trash
+        if (rename(src_path, destpath) != 0) {
+            //Si falla el movimento, mostrar un mensaje de error.
+            fprintf(sterr, "Error al mover '%s' a la carpeta .trash.\n", src_path);
         }
-
-        //  Comprovem que el fitxer no sigui un directori:
-        if(opendir(argv[i]) != NULL){
-            fprintf(stderr, "Error: %s es una carpeta", argv[i]);
-            exit(1);
-        }
-
-        //  Comprovem que el fitxer sigui escribible:
-        if(access(argv[i], W_OK) == -1){
-            //  Comprovem que el dispositiu d'entrada estàndard sigui un terminal:
-            if(isatty(fileno(stdin))){
-                //  Demanem confirmació a l'usuari:
-                char *input = malloc(10);
-                fprintf(stderr, "Estàs segur que vols remoure el fitxer %s? (y/n): ", argv[i]);
-                fgets(input, 10, stdin);
-                if(strcmp(input, "y")==0){
-                    //  Mirem el directori on es troba el fitxer:
-                    char *home = getpwuid(getuid())->pw_dir;
-                    //  Creem el path del fitxer:
-                    char *trash = strcat(home, "/trash");
-                    char *new = strcat(trash, argv[i]);
-                    rename(argv[i], new);
-                    //  Comprovem que el rename s'hagi fet correctament:
-                    if(rename(argv[i], new) == -1){
-                        perror("Error: No s'ha pogut moure el fitxer correctament.");
-                        exit(1);
-                    }
-                }
-            }
-            
-        }      
+      }
     }
-    exit(1);
+  }
+    return 0;
 }
+
+
